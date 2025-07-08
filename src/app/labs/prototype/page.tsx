@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, Download, FileUp, Loader2, Package, RectangleHorizontal, Trash2, Type, XIcon } from 'lucide-react';
+import { ArrowLeft, Download, FileUp, Loader2, RectangleHorizontal, Trash2, Type, XIcon } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import React, { useState } from 'react';
@@ -68,7 +68,7 @@ const UploadZone = ({ onFileChange, isUploading }: { onFileChange: (e: React.Cha
           <label htmlFor="file-upload" className="cursor-pointer text-center">
             <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="mx-auto h-12 w-12 text-muted-foreground mb-4"><path d="M21.2 15c.7-1.2 1-2.5.7-3.9-.6-2.4-2.4-4.2-4.8-4.8-1.4-.3-2.7-.1-3.9.7L4 4l-2 2 6.4 6.4c-1.4 2.5-1.2 5.6.6 7.8s5.3 3.5 7.8.6L22 22l-2-2-4.8-4.8z"/><path d="M11 11l2-2"/><path d="m22 2-3 1-1 4-4 1-1 3"/></svg>
             <p className="text-muted-foreground text-sm max-w-xs">
-              Upload an Image to Generate a React Codebase
+              Upload UI Screenshots to Generate a React Codebase
             </p>
           </label>
         </>
@@ -76,42 +76,32 @@ const UploadZone = ({ onFileChange, isUploading }: { onFileChange: (e: React.Cha
     </div>
 );
 
-const DndGrid = ({ onDragEnd, images, onRemoveImage, onFileChange }: {
-    onDragEnd: (event: DragEndEvent) => void;
+const DndGrid = ({ images, onRemoveImage, onFileChange }: {
     images: ImageFile[];
     onRemoveImage: (id: string) => void;
     onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }) => (
-    <DndContext
-      sensors={useSensors(
-        useSensor(PointerSensor),
-        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-      )}
-      collisionDetection={closestCenter}
-      onDragEnd={onDragEnd}
-    >
-      <SortableContext items={images} strategy={rectSortingStrategy}>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {images.map(image => (
-            <SortableImage key={image.id} image={image} onRemove={onRemoveImage} />
-          ))}
-           <div className="relative flex w-full flex-col items-center justify-center rounded-lg border-2 border-dashed border-border/50 aspect-video">
-              <input
-                type="file"
-                id="file-upload-more"
-                multiple
-                accept="image/png, image/jpeg, application/zip"
-                onChange={onFileChange}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              />
-              <label htmlFor="file-upload-more" className="cursor-pointer text-center p-4">
-                <FileUp className="h-8 w-8 text-muted-foreground mb-2 mx-auto" />
-                <p className="text-muted-foreground text-xs">Add more screens...</p>
-              </label>
-          </div>
+    <SortableContext items={images} strategy={rectSortingStrategy}>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {images.map(image => (
+          <SortableImage key={image.id} image={image} onRemove={onRemoveImage} />
+        ))}
+         <div className="relative flex w-full flex-col items-center justify-center rounded-lg border-2 border-dashed border-border/50 aspect-video">
+            <input
+              type="file"
+              id="file-upload-more"
+              multiple
+              accept="image/png, image/jpeg, application/zip"
+              onChange={onFileChange}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            />
+            <label htmlFor="file-upload-more" className="cursor-pointer text-center p-4">
+              <FileUp className="h-8 w-8 text-muted-foreground mb-2 mx-auto" />
+              <p className="text-muted-foreground text-xs">Add more screens...</p>
+            </label>
         </div>
-      </SortableContext>
-    </DndContext>
+      </div>
+    </SortableContext>
 );
 
 export default function PrototypePage() {
@@ -171,7 +161,6 @@ export default function PrototypePage() {
 
     setImages(prev => [...prev, ...newImages]);
     setIsUploading(false);
-    // Reset file input
     event.target.value = '';
   };
 
@@ -270,14 +259,20 @@ export default function PrototypePage() {
               <h2 className="text-lg font-bold text-accent">Digital Studio</h2>
               <h1 className="text-5xl md:text-6xl font-bold tracking-tight mt-1">Drag & Drop</h1>
               <p className="mt-4 text-muted-foreground max-w-lg mx-auto">
-                Upload a UI screenshot to generate a full React codebase, or drag and drop widgets to build a simple layout.
+                Upload your UI screenshots to generate a full React codebase, or reorder them to define your application's flow.
               </p>
             </div>
             
             {images.length === 0 ? (
               <UploadZone onFileChange={handleFileChange} isUploading={isUploading} />
             ) : (
-              <DndGrid onDragEnd={handleDragEnd} images={images} onRemoveImage={handleRemoveImage} onFileChange={handleFileChange} />
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <DndGrid images={images} onRemoveImage={handleRemoveImage} onFileChange={handleFileChange} />
+              </DndContext>
             )}
 
             <div className="mt-8 text-center flex justify-center items-center gap-4">
