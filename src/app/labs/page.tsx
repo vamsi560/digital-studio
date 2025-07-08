@@ -29,7 +29,7 @@ export default function LabsPage() {
           </h1>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 motion-safe:animate-fade-in" style={{animationDelay: '0.5s'}}>
-            <LabCard href="#" icon={<Monitor className="h-10 w-10 text-primary/80" />} label="Prototype Lab" />
+            <LabCard href="/labs/prototype" icon={<Monitor className="h-10 w-10 text-primary/80" />} label="Prototype Lab" />
             <LabCard href="#" icon={<Smartphone className="h-10 w-10 text-primary/80" />} label="App Lab" />
             <LabCard href="#" icon={<Layers className="h-10 w-10 text-primary/80" />} label="Integration Lab" />
           </div>
