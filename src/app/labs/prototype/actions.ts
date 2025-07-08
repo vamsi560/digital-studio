@@ -13,6 +13,9 @@ export async function generateCodebaseAction(
     return result;
   } catch (error) {
     console.error('Error generating codebase:', error);
-    throw new Error('Failed to generate codebase. Please try again.');
+    if (error instanceof Error) {
+      throw new Error(error.message);
+    }
+    throw new Error('An unknown error occurred during code generation.');
   }
 }
