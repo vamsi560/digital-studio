@@ -1,9 +1,9 @@
 'use client';
 
-import { ArrowLeft, Download, FileUp, Loader2, Package, Trash2, XIcon } from 'lucide-react';
+import { ArrowLeft, Download, FileUp, Loader2, Package, RectangleHorizontal, Trash2, Type, XIcon } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import React, { useCallback, useState } from 'react';
+import React, { useState } from 'react';
 import JSZip from 'jszip';
 import {
   DndContext,
@@ -25,7 +25,6 @@ import { CSS } from '@dnd-kit/utilities';
 import { generateCodebaseAction } from './actions';
 import { Toaster } from '@/components/ui/toaster';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
 
 type ImageFile = {
   id: string;
@@ -49,6 +48,72 @@ function SortableImage({ image, onRemove }: { image: ImageFile, onRemove: (id: s
   );
 }
 
+const UploadZone = ({ onFileChange, isUploading }: { onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void, isUploading: boolean }) => (
+    <div className="relative flex w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-border/30 p-12 min-h-[260px]">
+      {isUploading ? (
+         <>
+           <Loader2 className="h-12 w-12 text-muted-foreground animate-spin mb-4" />
+           <p className="text-muted-foreground text-sm">Processing your files...</p>
+         </>
+      ) : (
+        <>
+          <input
+            type="file"
+            id="file-upload"
+            multiple
+            accept="image/png, image/jpeg, application/zip"
+            onChange={onFileChange}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          />
+          <label htmlFor="file-upload" className="cursor-pointer text-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="mx-auto h-12 w-12 text-muted-foreground mb-4"><path d="M21.2 15c.7-1.2 1-2.5.7-3.9-.6-2.4-2.4-4.2-4.8-4.8-1.4-.3-2.7-.1-3.9.7L4 4l-2 2 6.4 6.4c-1.4 2.5-1.2 5.6.6 7.8s5.3 3.5 7.8.6L22 22l-2-2-4.8-4.8z"/><path d="M11 11l2-2"/><path d="m22 2-3 1-1 4-4 1-1 3"/></svg>
+            <p className="text-muted-foreground text-sm max-w-xs">
+              Upload an Image to Generate a React Codebase
+            </p>
+          </label>
+        </>
+      )}
+    </div>
+);
+
+const DndGrid = ({ onDragEnd, images, onRemoveImage, onFileChange }: {
+    onDragEnd: (event: DragEndEvent) => void;
+    images: ImageFile[];
+    onRemoveImage: (id: string) => void;
+    onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}) => (
+    <DndContext
+      sensors={useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+      )}
+      collisionDetection={closestCenter}
+      onDragEnd={onDragEnd}
+    >
+      <SortableContext items={images} strategy={rectSortingStrategy}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {images.map(image => (
+            <SortableImage key={image.id} image={image} onRemove={onRemoveImage} />
+          ))}
+           <div className="relative flex w-full flex-col items-center justify-center rounded-lg border-2 border-dashed border-border/50 aspect-video">
+              <input
+                type="file"
+                id="file-upload-more"
+                multiple
+                accept="image/png, image/jpeg, application/zip"
+                onChange={onFileChange}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
+              <label htmlFor="file-upload-more" className="cursor-pointer text-center p-4">
+                <FileUp className="h-8 w-8 text-muted-foreground mb-2 mx-auto" />
+                <p className="text-muted-foreground text-xs">Add more screens...</p>
+              </label>
+          </div>
+        </div>
+      </SortableContext>
+    </DndContext>
+);
+
 export default function PrototypePage() {
   const [images, setImages] = useState<ImageFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -63,6 +128,15 @@ export default function PrototypePage() {
     })
   );
 
+  const readFileAsDataURL = (file: File | Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+  
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
@@ -79,13 +153,14 @@ export default function PrototypePage() {
       } else if (file.type === 'application/zip') {
         try {
           const zip = await JSZip.loadAsync(file);
-          for (const [relativePath, zipEntry] of Object.entries(zip.files)) {
-            if (!zipEntry.dir && (zipEntry.name.endsWith('.png') || zipEntry.name.endsWith('.jpg') || zipEntry.name.endsWith('.jpeg'))) {
-              const blob = await zipEntry.async('blob');
-              const id = `${zipEntry.name}-${Date.now()}`;
-              const src = await readFileAsDataURL(blob);
-              newImages.push({ id, src });
-            }
+          const imageFiles = Object.values(zip.files).filter(f => !f.dir && (f.name.endsWith('.png') || f.name.endsWith('.jpg') || f.name.endsWith('.jpeg')));
+          imageFiles.sort((a, b) => a.name.localeCompare(b.name));
+
+          for (const zipEntry of imageFiles) {
+            const blob = await zipEntry.async('blob');
+            const id = `${zipEntry.name}-${Date.now()}`;
+            const src = await readFileAsDataURL(blob);
+            newImages.push({ id, src });
           }
         } catch (error) {
           console.error("Error unzipping file:", error);
@@ -96,15 +171,8 @@ export default function PrototypePage() {
 
     setImages(prev => [...prev, ...newImages]);
     setIsUploading(false);
-  };
-
-  const readFileAsDataURL = (file: File | Blob): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
+    // Reset file input
+    event.target.value = '';
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -151,10 +219,6 @@ export default function PrototypePage() {
     if (!generatedFiles) return;
     const zip = new JSZip();
     for (const [path, content] of Object.entries(generatedFiles)) {
-      const folders = path.substring(0, path.lastIndexOf('/'));
-      if (folders) {
-        zip.folder(folders);
-      }
       zip.file(path, content);
     }
     const blob = await zip.generateAsync({ type: 'blob' });
@@ -165,43 +229,14 @@ export default function PrototypePage() {
     link.click();
     document.body.removeChild(link);
   };
-  
-  const UploadZone = () => (
-    <div className="flex w-full flex-col items-center justify-center gap-6 text-center">
-      <div className="relative flex w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-border/50 p-12 min-h-[260px]">
-        {isUploading ? (
-          <>
-            <Loader2 className="h-12 w-12 text-muted-foreground animate-spin mb-4" />
-            <p className="text-muted-foreground text-sm">Processing your files...</p>
-          </>
-        ) : (
-          <>
-            <input
-              type="file"
-              id="file-upload"
-              multiple
-              accept="image/png, image/jpeg, application/zip"
-              onChange={handleFileChange}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            />
-            <label htmlFor="file-upload" className="cursor-pointer">
-              <FileUp className="h-12 w-12 text-muted-foreground mb-4 mx-auto" />
-              <p className="text-muted-foreground text-sm max-w-xs">
-                Click or drag & drop to upload screenshots or a zip file to generate a React Codebase
-              </p>
-            </label>
-          </>
-        )}
-      </div>
-    </div>
-  );
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background text-foreground relative overflow-hidden">
       <Toaster />
-      <div className="absolute left-8 top-1/2 -translate-y-1/2 transform">
+      
+      <div className="absolute left-8 top-1/2 -translate-y-1/2 transform hidden md:block">
         <p className="text-muted-foreground tracking-[0.4em] uppercase text-sm [writing-mode:vertical-lr] rotate-180">
-          Creative
+          Digital Studio
         </p>
       </div>
 
@@ -212,67 +247,64 @@ export default function PrototypePage() {
         </Link>
       </header>
 
-      <main className="flex flex-1 items-center justify-center p-8">
-        <div className="flex flex-row items-start gap-12 w-full max-w-6xl">
-          <aside className="w-72 flex-shrink-0 rounded-xl bg-secondary/20 p-6 sticky top-20">
-            <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
-              Prototype Builder
+      <div className="flex flex-1 w-full items-center justify-center p-8">
+        <div className="flex flex-row items-start gap-8 w-full max-w-7xl">
+          <aside className="w-60 flex-shrink-0 rounded-xl bg-secondary/20 p-6 hidden md:block">
+            <h3 className="mb-4 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              Basic Widgets
             </h3>
-            <p className="text-sm text-muted-foreground mb-6">Upload, order, and generate your app.</p>
-            
-            <div className="space-y-4">
-              <Button onClick={handleGenerateCode} disabled={isGenerating || images.length === 0} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-bold py-6">
-                {isGenerating ? <Loader2 className="animate-spin mr-2" /> : <Package className="mr-2" />}
-                Generate Code
-              </Button>
-              
-              {generatedFiles && (
-                 <Button onClick={handleDownload} className="w-full">
-                    <Download className="mr-2" />
-                    Download Zip
-                </Button>
-              )}
-
-              {images.length > 0 && (
-                <Button onClick={handleClearAll} variant="outline" className="w-full">
-                  <Trash2 className="mr-2" />
-                  Clear All
-                </Button>
-              )}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col items-center justify-center gap-2 rounded-lg bg-background p-4 text-center text-muted-foreground aspect-square">
+                <Type className="h-6 w-6" />
+                <span className="text-xs">Heading</span>
+              </div>
+              <div className="flex flex-col items-center justify-center gap-2 rounded-lg bg-background p-4 text-center text-muted-foreground aspect-square">
+                <RectangleHorizontal className="h-6 w-6" />
+                <span className="text-xs">Button</span>
+              </div>
             </div>
           </aside>
 
-          <div className="flex-1 w-full min-w-0">
+          <main className="flex-1 min-w-0">
+            <div className="text-center mb-8">
+              <h2 className="text-lg font-bold text-accent">Digital Studio</h2>
+              <h1 className="text-5xl md:text-6xl font-bold tracking-tight mt-1">Drag & Drop</h1>
+              <p className="mt-4 text-muted-foreground max-w-lg mx-auto">
+                Upload a UI screenshot to generate a full React codebase, or drag and drop widgets to build a simple layout.
+              </p>
+            </div>
+            
             {images.length === 0 ? (
-                <UploadZone />
+              <UploadZone onFileChange={handleFileChange} isUploading={isUploading} />
             ) : (
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext items={images} strategy={rectSortingStrategy}>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {images.map(image => (
-                      <SortableImage key={image.id} image={image} onRemove={handleRemoveImage} />
-                    ))}
-                     <div className="relative flex w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-border/50 min-h-[160px] aspect-video">
-                        <input
-                          type="file"
-                          id="file-upload-more"
-                          multiple
-                          accept="image/png, image/jpeg, application/zip"
-                          onChange={handleFileChange}
-                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        />
-                        <label htmlFor="file-upload-more" className="cursor-pointer text-center p-4">
-                          <FileUp className="h-8 w-8 text-muted-foreground mb-2 mx-auto" />
-                          <p className="text-muted-foreground text-xs">Add more screens...</p>
-                        </label>
-                    </div>
-                  </div>
-                </SortableContext>
-              </DndContext>
+              <DndGrid onDragEnd={handleDragEnd} images={images} onRemoveImage={handleRemoveImage} onFileChange={handleFileChange} />
             )}
-          </div>
+
+            <div className="mt-8 text-center flex justify-center items-center gap-4">
+              <Button onClick={handleGenerateCode} disabled={isGenerating || images.length === 0} className="bg-accent hover:bg-accent/90 text-accent-foreground font-bold py-3 px-8">
+                {isGenerating ? <Loader2 className="animate-spin mr-2" /> : null}
+                Generate Codebase
+              </Button>
+              {generatedFiles && (
+                 <Button onClick={handleDownload} variant="outline">
+                    <Download className="mr-2 h-4 w-4" />
+                    Download Zip
+                </Button>
+              )}
+               {images.length > 0 && !isGenerating && (
+                <Button onClick={handleClearAll} variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive">
+                  <Trash2 className="h-5 w-5" />
+                  <span className="sr-only">Clear All</span>
+                </Button>
+              )}
+            </div>
+            
+            <div className="mt-8 w-full border-2 border-dashed border-border/30 rounded-xl p-8 text-center text-muted-foreground min-h-[100px] flex items-center justify-center">
+              Or Drag Widgets Here
+            </div>
+          </main>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
