@@ -10,8 +10,7 @@ export default function Home() {
           VM Digital Studio
         </h1>
         <p className="text-3xl md:text-5xl text-primary/90">
-          We build the app that{" "}
-          <span className="bg-accent text-accent-foreground ml-2 px-4 py-2 rounded-lg inline-block font-medium">
+          <span className="bg-accent text-accent-foreground px-4 py-2 rounded-lg inline-block font-medium">
             does that.
           </span>
         </p>
