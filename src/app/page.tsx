@@ -1,4 +1,5 @@
 import { ArrowDown } from "lucide-react";
+import Link from "next/link";
 
 export default function Home() {
   return (
@@ -7,10 +8,7 @@ export default function Home() {
       
       <div className="flex flex-col items-center text-center space-y-10 motion-safe:animate-fade-in">
         <h1 className="text-5xl md:text-7xl font-bold tracking-tight">
-          VM Digital Studio{' '}
-          <span className="bg-accent text-accent-foreground px-4 py-2 rounded-lg inline-block font-medium">
-            does that.
-          </span>
+          VM Digital Studio does that.
         </h1>
 
         <blockquote className="pt-8 max-w-3xl mx-auto">
@@ -21,9 +19,11 @@ export default function Home() {
         </blockquote>
       </div>
 
-      <div className="motion-safe:animate-fade-in motion-safe:animate-bounce-slow" style={{ animationDelay: '1s' }}>
-        <ArrowDown className="h-8 w-8 text-primary/50" />
-      </div>
+      <Link href="/labs" aria-label="Go to next page">
+        <div className="motion-safe:animate-fade-in motion-safe:animate-bounce-slow" style={{ animationDelay: '1s' }}>
+          <ArrowDown className="h-8 w-8 text-primary/50" />
+        </div>
+      </Link>
     </main>
   );
 }
