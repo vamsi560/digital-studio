@@ -194,7 +194,15 @@ export default function PrototypePage() {
     try {
       const imageData = images.map(img => img.src);
       const result = await generateCodebaseAction(imageData);
-      setGeneratedFiles(result.files);
+      
+      const filesRecord = result.files.reduce((acc, file) => {
+        if (file.path && file.content) {
+          acc[file.path] = file.content;
+        }
+        return acc;
+      }, {} as Record<string, string>);
+
+      setGeneratedFiles(filesRecord);
       toast({ title: 'Success!', description: 'Your codebase has been generated.' });
     } catch (error) {
       console.error(error);

@@ -23,9 +23,18 @@ export type GeneratePrototypeInput = z.infer<
 
 const GeneratePrototypeOutputSchema = z.object({
   files: z
-    .record(z.string())
+    .array(
+      z.object({
+        path: z
+          .string()
+          .describe('The full file path, e.g., src/app/page.tsx'),
+        content: z
+          .string()
+          .describe('The complete code content for the file.'),
+      })
+    )
     .describe(
-      'A map of file paths to their string content. Example: {"src/app/page.tsx": "...", "src/components/Button.tsx": "..."}'
+      'An array of objects, each representing a file with its path and content.'
     ),
 });
 export type GeneratePrototypeOutput = z.infer<
@@ -49,7 +58,7 @@ Use TypeScript and TSX files.
 Use TailwindCSS for styling. You can use shadcn/ui components if they are appropriate, as they are available in the project.
 The navigation between pages must follow the order of the images provided. Add Next.js <Link> components or buttons with router.push to navigate from one screen to the next. The first image is the home page, the second is the next page, and so on.
 
-The output must be a single JSON object. The keys of this object must be the full file paths (e.g., 'src/app/page.tsx', 'src/app/about/page.tsx', 'src/components/Header.tsx'), and the values must be the complete code content for each file as a string.
+The output must be a single JSON object containing a 'files' property. The 'files' property must be an array of objects, where each object represents a file and has two keys: 'path' (the full file path, e.g., 'src/app/page.tsx') and 'content' (the complete code for that file).
 
 Create a root layout in 'src/app/layout.tsx'.
 Create a home page at 'src/app/page.tsx' which corresponds to the first image.
