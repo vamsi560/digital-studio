@@ -7,13 +7,11 @@ export default function Home() {
       
       <div className="flex flex-col items-center text-center space-y-10 motion-safe:animate-fade-in">
         <h1 className="text-5xl md:text-7xl font-bold tracking-tight">
-          VM Digital Studio
-        </h1>
-        <p className="text-3xl md:text-5xl text-primary/90">
+          VM Digital Studio{' '}
           <span className="bg-accent text-accent-foreground px-4 py-2 rounded-lg inline-block font-medium">
             does that.
           </span>
-        </p>
+        </h1>
 
         <blockquote className="pt-8 max-w-3xl mx-auto">
           <p className="text-xl md:text-2xl italic text-primary/80">
