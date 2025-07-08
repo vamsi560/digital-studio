@@ -151,7 +151,6 @@ export default function PrototypePage() {
     if (!generatedFiles) return;
     const zip = new JSZip();
     for (const [path, content] of Object.entries(generatedFiles)) {
-      // Create folders by splitting the path
       const folders = path.substring(0, path.lastIndexOf('/'));
       if (folders) {
         zip.folder(folders);
@@ -215,8 +214,7 @@ export default function PrototypePage() {
 
       <main className="flex flex-1 items-center justify-center p-8">
         <div className="flex flex-row items-start gap-12 w-full max-w-6xl">
-          {/* Sidebar */}
-          <aside className="w-72 flex-shrink-0 rounded-xl bg-secondary/20 p-6 sticky top-8">
+          <aside className="w-72 flex-shrink-0 rounded-xl bg-secondary/20 p-6 sticky top-20">
             <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
               Prototype Builder
             </h3>
@@ -244,14 +242,13 @@ export default function PrototypePage() {
             </div>
           </aside>
 
-          {/* Main Content */}
           <div className="flex-1 w-full min-w-0">
             {images.length === 0 ? (
                 <UploadZone />
             ) : (
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <SortableContext items={images} strategy={rectSortingStrategy}>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                     {images.map(image => (
                       <SortableImage key={image.id} image={image} onRemove={handleRemoveImage} />
                     ))}
